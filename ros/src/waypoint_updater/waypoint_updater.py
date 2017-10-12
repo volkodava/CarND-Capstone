@@ -33,20 +33,29 @@ class WaypointUpdater(object):
 
         # TODO: Add a subscriber for /traffic_waypoint and /obstacle_waypoint below
 
-
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
         # TODO: Add other member variables you need below
+        self.lane = None
+        self.pose = None
 
         rospy.spin()
 
     def pose_cb(self, msg):
-        # TODO: Implement
-        pass
+        self.pose = msg
+        if self.lane:
+            lane = self.waypoints_following(self.lane, self.pose)
+            self.final_waypoints_pub.publish(lane)
 
-    def waypoints_cb(self, waypoints):
-        # TODO: Implement
-        pass
+    def waypoints_cb(self, msg):
+        self.lane = msg
+
+    def waypoints_following(self, lane, pose):
+        curr_x = pose.pose.position.x
+        wp_index = next((i for i,w in enumerate(lane.waypoints) if w.pose.pose.position.x > curr_x), 0)
+        wp = lane.waypoints[wp_index : wp_index+LOOKAHEAD_WPS]
+        return Lane(None, wp)
+
 
     def traffic_cb(self, msg):
         # TODO: Callback for /traffic_waypoint message. Implement
