@@ -9,6 +9,7 @@ import math
 
 from twist_controller import Controller
 from yaw_controller import YawController
+from pid import PID
 
 '''
 You can build this node only after you have built (or partially built) the `waypoint_updater` node.
@@ -56,8 +57,9 @@ class DBWNode(object):
                                          BrakeCmd, queue_size=1)
 
         # TODO: Create `TwistController` object
-        self.yaw_controller = YawController(wheel_base, steer_ratio, 10, max_lat_accel, max_steer_angle)
-        self.controller = Controller(self.yaw_controller)
+        yaw_controller = YawController(wheel_base, steer_ratio, 0.5, max_lat_accel, max_steer_angle)
+        speed_controller = PID(2., 0.5, 0.5, decel_limit, accel_limit)
+        self.controller = Controller(yaw_controller, speed_controller, accel_limit, decel_limit, vehicle_mass, wheel_radius)
         self.current_twist = None
         self.proposed_twist = None
         self.dbw_enabled = True
@@ -93,7 +95,7 @@ class DBWNode(object):
             #   self.publish(throttle, brake, steer)
 
             if self.dbw_enabled and self.current_twist and self.proposed_twist:
-                throttle, brake, steer = self.controller.control(self.current_twist, self.proposed_twist)
+                throttle, brake, steer = self.controller.control(self.current_twist, self.proposed_twist, 1/50.)
                 rospy.loginfo('DBW Publishing %s %s %s', throttle, brake, steer)
                 self.publish(throttle, brake, steer)
             rate.sleep()
@@ -112,7 +114,7 @@ class DBWNode(object):
 
         bcmd = BrakeCmd()
         bcmd.enable = True
-        bcmd.pedal_cmd_type = BrakeCmd.CMD_TORQUE
+        bcmd.pedal_cmd_type = BrakeCmd.CMD_PERCENT
         bcmd.pedal_cmd = brake
         self.brake_pub.publish(bcmd)
 
