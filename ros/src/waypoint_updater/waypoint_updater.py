@@ -50,15 +50,23 @@ class WaypointUpdater(object):
         self.wps = None
         self.traffic_wp = -1
         self.next_wp = None
+        self.loop_rate = 5
 
-        rospy.spin()
+        self.run_loop()
+
+    def run_loop(self):
+        rate = rospy.Rate(self.loop_rate)
+        while not rospy.is_shutdown():
+            if self.pose is not None \
+                    and self.wps is not None:
+                next_wp = self.next_waypoint(self.pose.position, self.pose.orientation, self.next_wp)
+                self.next_wp = next_wp
+                self.publish_final_waypoints(next_wp)
+
+            rate.sleep()
 
     def pose_cb(self, msg):
         self.pose = msg.pose
-        if self.wps:
-            next_wp = self.next_waypoint(self.pose.position, self.pose.orientation, self.next_wp)
-            self.next_wp = next_wp
-            self.publish_final_waypoints(next_wp)
 
     def waypoints_cb(self, msg):
         self.wps = msg.waypoints
@@ -73,7 +81,7 @@ class WaypointUpdater(object):
         for i, w in enumerate(wps):
             w.twist.twist.linear.x = curr_vel + inc_vel * (i+1)
             if w.twist.twist.linear.x > MAX_VEL: w.twist.twist.linear.x = MAX_VEL
-        sample = [wps[i].twist.twist.linear.x for i in range(0, 20, 2)]
+        sample = [wps[i].twist.twist.linear.x for i in range(0, 20, 2) if i < len(wps)]
         rospy.loginfo("wp init cruise %s %s", inc_vel, sample)
         return wps
 
@@ -91,7 +99,7 @@ class WaypointUpdater(object):
         for i, w in enumerate(wps):
             w.twist.twist.linear.x = init_vel - dec_vel * i
             if w.twist.twist.linear.x < 0.5: w.twist.twist.linear.x = 0
-        sample = [wps[i].twist.twist.linear.x for i in range(0, 20, 2)]
+        sample = [wps[i].twist.twist.linear.x for i in range(0, 20, 2) if i < len(wps)]
         rospy.loginfo("wp init stop %s ", sample)
         return wps
 
