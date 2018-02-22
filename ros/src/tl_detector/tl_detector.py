@@ -186,6 +186,7 @@ class TLDetector(object):
 
         """
         if self.camera_image is None:
+            rospy.loginfo("Camera image NOT found")
             self.prev_light_loc = None
             return False
 
@@ -204,7 +205,15 @@ class TLDetector(object):
                 1: TrafficLight.GREEN, 2: TrafficLight.RED,
                 3: TrafficLight.YELLOW, 4: TrafficLight.UNKNOWN
             }
+            class_dict_names = {
+                1: "GREEN", 2: "RED",
+                3: "YELLOW", 4: "UNKNOWN"
+            }
             state = class_dict[max_class]
+            rospy.loginfo("Class %s", class_dict_names[max_class])
+        else:
+            rospy.loginfo("Classes NOT found")
+
         return state
 
     def process_traffic_lights(self):
