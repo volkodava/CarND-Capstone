@@ -52,6 +52,9 @@ class WaypointUpdater(object):
         self.next_wp = None
         self.loop_rate = 5
 
+        # wait until traffic light detector is fully initialized
+        rospy.wait_for_message('/traffic_waypoint', Int32)
+
         self.run_loop()
 
     def run_loop(self):
