@@ -53,7 +53,7 @@ class TLDetector(object):
         self.last_state = TrafficLight.UNKNOWN
         self.last_wp = -1
         self.state_count = 0
-        self.loop_rate = 5
+        self.loop_rate = 1
 
         model = 'light_classification/subhash_frozen_inference_graph.pb'
         label_path = 'light_classification/subhash_label_map.pbtxt'

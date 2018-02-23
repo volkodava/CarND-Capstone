@@ -51,7 +51,7 @@ class WaypointUpdater(object):
         self.wps = None
         self.traffic_wp = -1
         self.next_wp = None
-        self.loop_rate = 5
+        self.loop_rate = 1
 
         # wait until car position, waypoints information and traffic light detector is fully initialized
         rospy.wait_for_message('/current_pose', PoseStamped)
