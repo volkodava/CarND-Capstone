@@ -30,7 +30,7 @@ LOOKAHEAD_WPS = 100 # Number of waypoints we will publish. You can change this n
 
 MAX_DECEL = 5
 MAX_VEL = 10.0
-GAP_THRESHOLD = 25
+GAP_THRESHOLD = 0
 
 
 class WaypointUpdater(object):
@@ -97,9 +97,11 @@ class WaypointUpdater(object):
         wps = self.wps[next_wp : last_wp]
         gap = stop_wp - next_wp
         if gap > GAP_THRESHOLD:
+            rospy.loginfo("GAP %s > %s", gap, GAP_THRESHOLD)
             dec_vel = curr_vel/gap
             init_vel = curr_vel
         else:
+            rospy.loginfo("GAP STOP %s <= %s", gap, GAP_THRESHOLD)
             dec_vel = 0
             init_vel = 0
         for i, w in enumerate(wps):
@@ -115,9 +117,13 @@ class WaypointUpdater(object):
             dist = self.distance(self.wps, next_wp, stop_wp)
             stop_dist = 100  # (curr_vel / MAX_DECEL) * curr_vel * 2
             if dist < stop_dist:
+                rospy.loginfo("STOP %s < %s", dist, stop_dist)
                 final_wps = self.stop_trajectory(next_wp, stop_wp)
                 self.final_waypoints_pub.publish(Lane(None, final_wps))
                 return
+            else:
+                rospy.loginfo("RUN %s < %s", dist, stop_dist)
+
         final_wps = self.cruise_trajectory(next_wp)
         self.final_waypoints_pub.publish(Lane(None, final_wps))
 
