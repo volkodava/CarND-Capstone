@@ -30,6 +30,7 @@ LOOKAHEAD_WPS = 100 # Number of waypoints we will publish. You can change this n
 
 MAX_DECEL = 5
 MAX_VEL = 10.0
+GAP_THRESHOLD = 25
 
 
 class WaypointUpdater(object):
@@ -52,7 +53,9 @@ class WaypointUpdater(object):
         self.next_wp = None
         self.loop_rate = 5
 
-        # wait until traffic light detector is fully initialized
+        # wait until car position, waypoints information and traffic light detector is fully initialized
+        rospy.wait_for_message('/current_pose', PoseStamped)
+        rospy.wait_for_message('/base_waypoints', Lane)
         rospy.wait_for_message('/traffic_waypoint', Int32)
 
         self.run_loop()
@@ -93,7 +96,7 @@ class WaypointUpdater(object):
         last_wp = next_wp + LOOKAHEAD_WPS
         wps = self.wps[next_wp : last_wp]
         gap = stop_wp - next_wp
-        if gap > 0:
+        if gap > GAP_THRESHOLD:
             dec_vel = curr_vel/gap
             init_vel = curr_vel
         else:
