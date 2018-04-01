@@ -1,0 +1,4 @@
+pandas==0.22.0
+rospkg==1.1.4
+catkin==0.7.11
+catkin-pkg==0.4.1

@@ -1,0 +1,63 @@
+FROM anatoliiv/docker-ros-desktop-full
+LABEL maintainer="volkodavav@gmail.com"
+ENV ROS_DISTRO=kinetic
+WORKDIR ${HOME}
+
+ENV TENSORFLOW_MODELS ${HOME}/tensorflow_models
+ENV COCODATASET_COCOAPI ${HOME}/cocodataset_cocoapi
+ENV PYTHONPATH ${PYTHONPATH}${TENSORFLOW_MODELS}/research:${TENSORFLOW_MODELS}/research/slim
+
+RUN sh -c 'echo "deb [ arch=amd64 ] http://packages.dataspeedinc.com/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-dataspeed-public.list'
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys FF6D3CDA
+RUN apt-get update
+
+RUN apt-get install -y git
+
+# see: https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/installation.md
+# Tensorflow Object Detection API checkout
+RUN git clone https://github.com/tensorflow/models.git tensorflow_models
+## COCO API checkout
+RUN git clone https://github.com/cocodataset/cocoapi.git cocodataset_cocoapi
+
+# setup rosdep
+RUN sh -c 'echo "yaml http://packages.dataspeedinc.com/ros/ros-public-'$ROS_DISTRO'.yaml '$ROS_DISTRO'" > /etc/ros/rosdep/sources.list.d/30-dataspeed-public-'$ROS_DISTRO'.list'
+RUN rosdep update
+
+RUN apt-get install -y ros-$ROS_DISTRO-dbw-mkz
+# end installing Dataspeed DBW
+
+# install python packages
+RUN apt-get install -y python2.7 python2.7-dev python-pip
+# see: https://github.com/cocodataset/cocoapi/issues/25
+RUN pip2 install --no-cache-dir Cython
+RUN apt-get install -y python3 python3-dev python3-pip protobuf-compiler python3-pil python3-lxml python3-tk libssl-dev libffi-dev python3-dev
+
+COPY requirements.txt ./requirements.txt
+COPY requirements-debug.txt ./requirements-debug.txt
+RUN pip2 install --no-cache-dir -r requirements.txt
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+RUN pip2 install --no-cache-dir -r requirements-debug.txt
+RUN pip3 install --no-cache-dir -r requirements-debug.txt
+
+# install required ros dependencies
+RUN apt-get install -y ros-$ROS_DISTRO-cv-bridge
+RUN apt-get install -y ros-$ROS_DISTRO-pcl-ros
+RUN apt-get install -y ros-$ROS_DISTRO-image-proc
+
+# socket io
+RUN apt-get install -y netbase
+
+# other tools
+RUN apt-get install -y vim less mc screen
+
+RUN cd ${COCODATASET_COCOAPI}/PythonAPI && \
+        make && \
+        cp -r pycocotools ${TENSORFLOW_MODELS}/research/
+
+RUN cd ${TENSORFLOW_MODELS}/research && \
+        protoc object_detection/protos/*.proto --python_out=.
+
+RUN apt-get autoclean \
+    && apt-get clean \
+    && apt-get autoremove
